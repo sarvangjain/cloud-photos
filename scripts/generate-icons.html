@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html><head><title>Generate CloudPhotos Icons</title></head>
+<body style="background:#1d1d1f;color:#fff;font-family:system-ui;padding:40px;text-align:center">
+<h2>CloudPhotos PWA Icon Generator</h2>
+<p>Click each button to download the icon, then save to <code>client/public/icons/</code></p>
+<div id="buttons" style="margin-top:20px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center"></div>
+<canvas id="c" style="display:none"></canvas>
+<script>
+function draw(size, maskable) {
+  const c = document.getElementById('c');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,size,size);
+
+  if (maskable) {
+    ctx.fillStyle = '#0a84ff';
+    ctx.fillRect(0,0,size,size);
+  } else {
+    const g = ctx.createLinearGradient(0,0,0,size);
+    g.addColorStop(0,'#0a84ff');
+    g.addColorStop(1,'#0056cc');
+    const r = size*0.22;
+    ctx.beginPath(); ctx.roundRect(0,0,size,size,r); ctx.fillStyle=g; ctx.fill();
+  }
+
+  // Cloud + upload arrow
+  const cx=size/2, cy=size*0.44, s=size*0.16;
+  ctx.fillStyle='rgba(255,255,255,0.95)';
+  ctx.beginPath();
+  ctx.arc(cx,cy,s*1.1,Math.PI,0);
+  ctx.arc(cx+s*0.9,cy+s*0.35,s*0.7,Math.PI*1.35,Math.PI*0.35,false);
+  ctx.arc(cx-s*0.85,cy+s*0.38,s*0.65,Math.PI*1.65,Math.PI*0.55,false);
+  ctx.closePath(); ctx.fill();
+  ctx.fillRect(cx-s*1.5,cy+s*0.35,s*3,s*0.7);
+
+  // Upload arrow
+  ctx.fillStyle='white';
+  ctx.beginPath();
+  ctx.moveTo(cx,cy+s*1.1); ctx.lineTo(cx-s*0.45,cy+s*1.7);
+  ctx.lineTo(cx+s*0.45,cy+s*1.7); ctx.closePath(); ctx.fill();
+  ctx.fillRect(cx-s*0.12,cy+s*1.5,s*0.24,s*1.0);
+
+  return c.toDataURL('image/png');
+}
+
+const configs = [
+  {size:192,m:false,name:'icon-192.png'},
+  {size:512,m:false,name:'icon-512.png'},
+  {size:192,m:true,name:'icon-maskable-192.png'},
+  {size:512,m:true,name:'icon-maskable-512.png'},
+  {size:180,m:false,name:'apple-touch-icon.png'},
+];
+
+const div = document.getElementById('buttons');
+configs.forEach(({size,m,name}) => {
+  const btn = document.createElement('button');
+  btn.textContent = name+' ('+size+'px)';
+  btn.style.cssText = 'padding:10px 20px;border-radius:8px;border:1px solid #444;background:#333;color:#fff;cursor:pointer;font-size:13px';
+  btn.onclick = () => {
+    const url = draw(size,m);
+    const a = document.createElement('a');
+    a.href = url; a.download = name; a.click();
+  };
+  div.appendChild(btn);
+});
+
+// Auto-generate all
+const autoBtn = document.createElement('button');
+autoBtn.textContent = '⬇ Download All';
+autoBtn.style.cssText = 'padding:12px 28px;border-radius:8px;border:none;background:#0a84ff;color:#fff;cursor:pointer;font-size:14px;font-weight:600;margin-top:10px;width:100%';
+autoBtn.onclick = () => {
+  configs.forEach(({size,m,name}) => {
+    const url = draw(size,m);
+    const a = document.createElement('a'); a.href = url; a.download = name; a.click();
+  });
+};
+div.appendChild(document.createElement('br'));
+div.appendChild(autoBtn);
+</script>
+</body></html>
