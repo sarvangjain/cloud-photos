@@ -3,6 +3,8 @@ import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut as firebaseSignOut,
   onAuthStateChanged,
 } from 'firebase/auth';
@@ -22,9 +24,30 @@ export const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
 export async function signInWithGoogle() {
-  const result = await signInWithPopup(auth, googleProvider);
-  return result.user;
+  try {
+    // Try popup first (works on desktop)
+    const result = await signInWithPopup(auth, googleProvider);
+    return result.user;
+  } catch (err) {
+    // If popup blocked or COOP issue, fall back to redirect
+    if (
+      err.code === 'auth/popup-blocked' ||
+      err.code === 'auth/popup-closed-by-user' ||
+      err.code === 'auth/cancelled-popup-request' ||
+      err.message?.includes('Cross-Origin-Opener-Policy')
+    ) {
+      // Redirect-based flow — page will reload, onAuthStateChanged picks up user
+      await signInWithRedirect(auth, googleProvider);
+      return null;
+    }
+    throw err;
+  }
 }
+
+// Handle redirect result on page load
+getRedirectResult(auth).catch(() => {
+  // Ignore — no redirect result means user didn't just come back from redirect
+});
 
 export async function signOut() {
   return firebaseSignOut(auth);

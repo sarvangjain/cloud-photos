@@ -1,101 +1,65 @@
 # CloudPhotos
 
-A personal web app to capture photos via your device camera and store them in your Amazon Photos account.
-
-## Features
-
-- 🔐 Google Sign-In via Firebase Auth
-- 📸 Camera capture (photo) with device camera
-- ☁️ Upload photos directly to Amazon Photos
-- 🖼️ Browse your Amazon Photos gallery with a fast, masonry-style UI
-- 🔗 Amazon Photos integration via cookie-based authentication
-
-## Prerequisites
-
-- Node.js 18+
-- An Amazon account with Amazon Photos
-- A Firebase project with Google Auth enabled
-
-## Setup
-
-### 1. Install dependencies
-
-```bash
-npm run install:all
-```
-
-### 2. Configure Firebase
-
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Create a new project (or use existing)
-3. Enable **Google** sign-in under Authentication → Sign-in method
-4. Go to Project Settings → General → Your apps → Add a web app
-5. Copy the Firebase config and create `client/.env`:
-
-```env
-VITE_FIREBASE_API_KEY=your_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
-```
-
-### 3. Configure Server
-
-Create `server/.env`:
-
-```env
-PORT=3001
-FIREBASE_PROJECT_ID=your_project_id
-COOKIE_ENCRYPTION_KEY=any-random-32-char-string-here!!
-```
-
-### 4. Get Amazon Photos Cookies
-
-1. Open [Amazon Photos](https://www.amazon.com/photos) in your browser
-2. Log in to your Amazon account
-3. Open DevTools (F12) → Application → Cookies → `https://www.amazon.com`
-4. Copy these cookies:
-   - `ubid-main`
-   - `at-main`  
-   - `session-id`
-5. You'll paste these into the app after logging in with Google
-
-### 5. Run
-
-```bash
-npm run dev
-```
-
-- Frontend: http://localhost:5173
-- Backend: http://localhost:3001
+A personal PWA to capture photos and store them in your Amazon Photos account.
 
 ## Architecture
 
 ```
-┌─────────────────────┐     ┌─────────────────────┐
-│   React Frontend    │────▶│   Express Backend    │
-│   (Vite + Tailwind) │     │   (API Proxy)        │
-│                     │     │                      │
-│ • Firebase Auth     │     │ • Verify Firebase    │
-│ • Camera Capture    │     │   tokens             │
-│ • Gallery UI        │     │ • Proxy Amazon API   │
-│ • Amazon Cookie     │     │   calls with cookies │
-│   Setup             │     │ • Encrypt/store      │
-└─────────────────────┘     │   cookies locally    │
-                            └──────────┬───────────┘
-                                       │
-                            ┌──────────▼───────────┐
-                            │   Amazon Photos      │
-                            │   (Internal API)     │
-                            │                      │
-                            │ • Upload photos      │
-                            │ • List/search        │
-                            │ • Download/thumbs    │
-                            └──────────────────────┘
+CloudPhotos/
+├── client/          ← React + Vite + Tailwind (PWA)
+│   └── src/
+│       ├── components/   (Gallery, Camera, Sidebar, etc.)
+│       ├── hooks/        (useAuth, useIsMobile, useInstallPrompt)
+│       └── services/     (Firebase auth, Cloud Functions API)
+│
+├── functions/       ← Firebase Cloud Functions (serverless backend)
+│   ├── index.js         (HTTP endpoints)
+│   └── amazonPhotos.js  (Amazon Photos API service)
+│
+├── firebase.json    ← Firebase config (hosting + functions + firestore)
+└── firestore.rules  ← Security rules
 ```
 
-## ⚠️ Disclaimer
+**No local server needed.** The backend runs as Firebase Cloud Functions.
 
-This app uses **unofficial, reverse-engineered** Amazon Photos API endpoints. It is intended for **personal use only**. Amazon could change or block these endpoints at any time. Use at your own risk.
+## Setup
+
+### 1. Install
+```bash
+npm run install:all
+```
+
+### 2. Deploy Cloud Functions + Firestore Rules
+```bash
+firebase login
+npm run deploy:functions
+npm run deploy:rules
+```
+
+> ⚠️ Cloud Functions require the **Blaze (pay-as-you-go)** plan because they make outbound network requests to Amazon. You won't be charged unless you exceed free tier limits (2M invocations/month).
+
+### 3. Get Amazon Cookies
+1. Open [Amazon Photos](https://www.amazon.com/photos) → Log in
+2. DevTools (F12) → Application → Cookies
+3. Copy: `session-id`, `ubid-main`, `at-main`
+4. You'll paste these in the app after signing in with Google
+
+### 4. Run (development)
+```bash
+npm run dev
+```
+Opens at http://localhost:5173. Functions run from the deployed URL.
+
+### 5. Deploy Everything
+```bash
+npm run deploy
+```
+
+## Features
+- 🔐 Google Sign-In (Firebase Auth)
+- 📸 Camera capture with front/back switch
+- ☁️ Upload to Amazon Photos
+- 🖼️ Browse gallery with date grouping + infinite scroll
+- 📱 Mobile-first PWA (installable, offline shell)
+- 🖥️ Desktop sidebar layout
+- 🔒 Cookies stored in Firestore (server-side only, not readable by client)
