@@ -1,6 +1,7 @@
 import { getIdToken } from './firebase';
 
-const API_BASE = '';  // Same origin — works with Vercel dev & production
+// Vercel API URL — set in .env after first deploy
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 async function authHeaders() {
   const token = await getIdToken();

@@ -30,8 +30,17 @@ export async function getCookies(uid) {
   return doc.data().amazonCookies || null;
 }
 
+const ALLOWED_ORIGINS = [
+  'https://snap-save-cloud.web.app',
+  'https://snap-save-cloud.firebaseapp.com',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+
 export function cors(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  const origin = req.headers.origin || '';
+  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  res.setHeader('Access-Control-Allow-Origin', allowed);
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Authorization,Content-Type');
   res.setHeader('Access-Control-Max-Age', '86400');
